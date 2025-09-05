@@ -1,5 +1,6 @@
 import { useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 
 /*
     Componente Matriz: Tiene tres partes principales:
@@ -146,52 +147,11 @@ export default function Matriz() {
   );
 
   const navigate = useNavigate();
-  const handleVerHeatmap = () => {
+   // Redirigir automáticamente al cargar el componente
+  useEffect(() => {
     navigate("/heatmap", { state: { heatmapConDetalle } });
-  };
+  }, [navigate, heatmapConDetalle]);
 
-  ///////////////////////////////////////////////////////////
-  // Fin  Código para generar los datos para armar la matriz: Salida en heatmapConDetalle
-  ////////////////////////////////////////////////////////
-
-  return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6">Matriz de Resultados</h1>
-
-      <h2 className="text-xl font-semibold mt-4">COF</h2>
-      {resultadoCof.length ? (
-        <>
-          <p>Total registros COF: {resultadoCof.length}</p>
-          <pre className="mt-2 max-h-[300px] overflow-auto bg-gray-100 p-4 rounded">
-            {JSON.stringify(resultadoPorSegmentoCof, null, 2)}
-          </pre>
-        </>
-      ) : (
-        <p>No se encontraron resultados COF.</p>
-      )}
-
-      <h2 className="text-xl font-semibold mt-6">FoF</h2>
-      {resultadoFof.length ? (
-        <>
-          <p>Total registros FoF: {resultadoFof.length}</p>
-          <pre className="mt-2 max-h-[300px] overflow-auto bg-gray-100 p-4 rounded">
-            {JSON.stringify(resultadoPorSegmentoFof, null, 2)}
-          </pre>
-        </>
-      ) : (
-        <p>No se encontraron resultados FoF.</p>
-      )}
-
-      <h2 className="text-xl font-semibold mt-6">Heatmap con detalle</h2>
-      <pre className="mt-2 max-h-[500px] overflow-auto bg-gray-100 p-4 rounded">
-        {JSON.stringify(heatmapConDetalle, null, 2)}
-      </pre>
-      <button
-        onClick={handleVerHeatmap}
-        className="bg-blue-500 text-white px-4 py-2 rounded"
-      >
-        Ver Heatmap
-      </button>
-    </div>
-  );
+  // No renderizamos nada
+  return null;
 }

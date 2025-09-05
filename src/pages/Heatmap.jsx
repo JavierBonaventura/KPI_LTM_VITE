@@ -259,41 +259,41 @@ export default function RiskMatrixHeatmap() {
             {/* Nivel de Riesgo Promedio */}
             <div className="bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200 rounded-lg p-6 shadow-sm">
               <div className="flex items-center justify-between">
- <div>
-  <p className="text-sm font-medium text-orange-600 mb-1">
-    Avg Risk Level
-  </p>
-  <p className="text-3xl font-bold text-orange-800">
-    {(() => {
-      const activeData = heatmapConDetalle.filter(
-        (c) => c.SegmentosCantidad > 0
-      );
-      if (activeData.length === 0) return "0.0";
-      const avgRisk =
-        activeData.reduce(
-          (sum, c) => sum + (c.cofIndex + c.fofIndex),
-          0
-        ) / activeData.length;
-      return avgRisk.toFixed(1);
-    })()}
-  </p>
-  <p className="text-xs text-gray-600 mt-1">
-    {(() => {
-      const activeData = heatmapConDetalle.filter(
-        (c) => c.SegmentosCantidad > 0
-      );
-      if (activeData.length === 0) return "No risk";
-      const avgRisk =
-        activeData.reduce(
-          (sum, c) => sum + (c.cofIndex + c.fofIndex),
-          0
-        ) / activeData.length;
-      if (avgRisk <= 2) return "Low Risk";
-      if (avgRisk <= 5) return "Medium Risk";
-      return "High Risk";
-    })()}
-  </p>
-</div>
+                <div>
+                  <p className="text-sm font-medium text-orange-600 mb-1">
+                    Avg Risk Level
+                  </p>
+                  <p className="text-3xl font-bold text-orange-800">
+                    {(() => {
+                      const activeData = heatmapConDetalle.filter(
+                        (c) => c.SegmentosCantidad > 0
+                      );
+                      if (activeData.length === 0) return "0.0";
+                      const avgRisk =
+                        activeData.reduce(
+                          (sum, c) => sum + (c.cofIndex + c.fofIndex),
+                          0
+                        ) / activeData.length;
+                      return avgRisk.toFixed(1);
+                    })()}
+                  </p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    {(() => {
+                      const activeData = heatmapConDetalle.filter(
+                        (c) => c.SegmentosCantidad > 0
+                      );
+                      if (activeData.length === 0) return "No risk";
+                      const avgRisk =
+                        activeData.reduce(
+                          (sum, c) => sum + (c.cofIndex + c.fofIndex),
+                          0
+                        ) / activeData.length;
+                      if (avgRisk <= 2) return "Low Risk";
+                      if (avgRisk <= 5) return "Medium Risk";
+                      return "High Risk";
+                    })()}
+                  </p>
+                </div>
 
                 <div className="bg-orange-500 p-3 rounded-full">
                   <svg
