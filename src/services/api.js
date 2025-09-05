@@ -41,7 +41,23 @@ export const getFof = async ({ analysisId, pipelineId, transmissionLineId }) => 
   return data;
 };
 
+// Consultar Cracking según nivel
+export const getCracking = async ({ analysisId, pipelineId, transmissionLineId }) => {
+  const url = transmissionLineId
+    ? `/api/v2/risk-results/${analysisId}/cracking/${pipelineId}/${transmissionLineId}`
+    : `/api/v2/risk-results/${analysisId}/cracking/${pipelineId}`;
+  const { data } = await api.get(url);
+  return data;
+};
 
+// Consultar PigTrap según nivel
+export const getPigTrap = async ({ analysisId, pipelineId, transmissionLineId }) => {
+  const url = transmissionLineId
+    ? `/api/v2/risk-results/${analysisId}/equipPigTrap/${pipelineId}/${transmissionLineId}`
+    : `/api/v2/risk-results/${analysisId}/equipPigTrap/${pipelineId}`;
+  const { data } = await api.get(url);
+  return data;
+};
 
 
 

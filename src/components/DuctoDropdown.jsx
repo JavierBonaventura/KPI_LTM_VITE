@@ -1,22 +1,14 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export default function DuctoDropdown({ ductos, selected, onSelect }) {
   const [isOpen, setIsOpen] = useState(false);
-
-  // Efecto para cerrar el menú cuando la selección cambia externamente
-  useEffect(() => {
-    // Solo cierra el menú si ya estaba abierto y la selección es válida
-    if (isOpen && selected) {
-      setIsOpen(false);
-    }
-  }, [selected]); // Escucha solo los cambios en la prop 'selected'
 
   const selectedOption = ductos.find((d) => d.TB_DuctoID === selected);
 
   return (
     <div className="mb-4 font-sans">
       <label className="block text-gray-700 font-medium mb-1">Selecciona un ducto</label>
-      <div className="relative relative w-[17rem] lg:w-[22.5rem]">
+      <div className="relative w-96">
         <div
           onClick={() => setIsOpen(!isOpen)}
           className="w-full p-3 bg-white border border-gray-300 rounded-lg shadow-sm cursor-pointer flex justify-between items-center text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 hover:border-blue-500 transition duration-200"

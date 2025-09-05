@@ -1,4 +1,4 @@
-// src/pages/DuctoTramoSelect.jsx
+// src/views/DuctoTramoSelect.jsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -6,10 +6,10 @@ import { useNavigate } from "react-router-dom";
 import DuctoDropdown from "../components/DuctoDropdown";
 import TramoDropdown from "../components/TramoDropdown";
 import RiesgoDropdown from "../components/RiesgoDropdown";
-import Loader from "../components/Loader";
+import Loader from "../components/Loader"; // <-- Importa el nuevo componente
 
 // Servicios de API
-import { getPipelines, getTramos, getCof, getFof, getCracking, getPigTrap } from "../services/api";
+import { getPipelines, getTramos, getCof, getFof } from "../services/api";
 
 export default function DuctoTramoSelect() {
   const navigate = useNavigate();
@@ -22,37 +22,16 @@ export default function DuctoTramoSelect() {
   const [selectedRiesgo, setSelectedRiesgo] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // --- Configuración de análisis ---
-  // Cada key define qué funciones de API llamar y a qué ruta navegar
-  const ANALYSIS_CONFIG = {
-    matriz: {
-      fetchFunctions: [getCof, getFof],
-      route: "/matriz",
-      buttonText: "Generar Matriz",
-    },
-    cracking: {
-      fetchFunctions: [getCracking],
-      route: "/calculocracking",
-      buttonText: "Generar Cracking",
-    },
-    pigtrap: {
-      fetchFunctions: [getPigTrap],
-      route: "/pigtrap",
-      buttonText: "Generar PigTrap",
-    },
-  };
-
   // --- Efecto: cargar ductos y tramos al inicio ---
   useEffect(() => {
     getPipelines().then(setDuctos);
-
     getTramos().then((data) => {
       const sorted = [...data].sort((a, b) => a.TramoName.localeCompare(b.TramoName));
       setTramos(sorted);
     });
   }, []);
 
-  // --- Efecto: filtrar tramos cuando se selecciona un ducto ---
+  // --- Efecto: filtrar tramos al seleccionar ducto ---
   useEffect(() => {
     if (!selectedDucto) {
       getTramos().then((data) => {
@@ -79,8 +58,8 @@ export default function DuctoTramoSelect() {
     }
   }, [selectedTramo, tramos]);
 
-  // --- Función genérica para manejar cualquier consulta ---
-  const handleConsultar = async (analysisKey) => {
+  // --- Acción: manejar botón "Consultar" ---
+  const handleConsultar = async () => {
     if (!selectedRiesgo || !selectedDucto) {
       alert("Selecciona un análisis de riesgo y un ducto.");
       return;
@@ -88,7 +67,6 @@ export default function DuctoTramoSelect() {
 
     setIsLoading(true);
 
-    // Preparar parámetros comunes para todas las APIs
     const params = {
       analysisId: selectedRiesgo,
       pipelineId: ductos.find((d) => d.TB_DuctoID === selectedDucto)?.Pipeline,
@@ -98,26 +76,21 @@ export default function DuctoTramoSelect() {
     };
 
     try {
-      const { fetchFunctions, route } = ANALYSIS_CONFIG[analysisKey];
+      const resultadoCof = await getCof(params);
+      const resultadoFof = await getFof(params);
 
-      // Ejecutar todas las funciones de la API en paralelo
-      const results = await Promise.all(fetchFunctions.map((fn) => fn(params)));
-
-      // Navegar al componente correspondiente pasando los resultados
-      navigate(route, { state: results });
+      navigate("/matriz", { state: { resultadoCof, resultadoFof } });
     } catch (err) {
-      console.error(`Error al consultar ${analysisKey}:`, err);
-      alert(`Error al consultar ${analysisKey}`);
-    } finally {
-      setIsLoading(false);
-    }
+      console.error("Error al consultar COF/FoF:", err);
+      alert("Error al consultar COF/FoF");
+        setIsLoading(false)
+    } 
   };
 
-  // --- Renderizado del componente ---
+  // --- Render ---
   return (
     <div className="bg-gray-50 text-gray-800 min-h-screen py-12 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-7xl mx-auto">
-        {/* Título y descripción */}
         <div className="text-center mb-10">
           <h1 className="text-4xl font-extrabold text-gray-800">
             Panel de Monitoreo de Riesgos
@@ -144,23 +117,24 @@ export default function DuctoTramoSelect() {
           </div>
         </div>
 
-        {/* Contenedor de botones */}
-        <div className="mt-8 text-center flex justify-center gap-4">
-          {Object.entries(ANALYSIS_CONFIG).map(([key, { buttonText }]) => (
-            <button
-              key={key}
-              className="px-6 py-3 bg-gradient-to-r from-[#276334] to-green-800 text-white font-bold rounded-lg shadow-md hover:from-green-800 hover:to-[#276334] transition duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-              onClick={() => handleConsultar(key)}
-              disabled={!selectedRiesgo || !selectedDucto || isLoading}
-            >
-              {isLoading ? "Consultando..." : buttonText}
-            </button>
-          ))}
+        {/* Contenedor del botón */}
+        <div className="mt-8 text-center">
+          <button
+            className="px-8 py-3 bg-gradient-to-r from-[#276334] to-green-800 text-white font-bold rounded-lg shadow-md hover:from-green-800 hover:to-[#276334] transition duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            onClick={handleConsultar}
+            disabled={!selectedRiesgo || !selectedDucto || isLoading}
+          >
+            {isLoading ? "Consultando..." : "Generar Matriz"}
+          </button>
         </div>
       </div>
 
-      {/* Loader condicional */}
+      {/* Llama al componente Loader de forma condicional */}
       {isLoading && <Loader />}
     </div>
   );
 }
+
+
+
+
