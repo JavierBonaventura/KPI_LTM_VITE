@@ -1,9 +1,9 @@
-// pages/PigTrap.jsx
+// pages/InternalCorrosion.jsx
 import { useLocation, useNavigate } from "react-router-dom";
 import Highcharts from "highcharts";
 import HighchartsReact from "highcharts-react-official";
 
-export default function PigTrap() {
+export default function InternalCorrosion() {
   const location = useLocation();
   const navigate = useNavigate();
   const { segmentos = 0, SumaFOF = 0, datos = [] } = location.state || [];
@@ -71,7 +71,7 @@ export default function PigTrap() {
         {/* Título */}
         <div className="text-center mb-10">
           <h1 className="text-4xl font-extrabold text-gray-800">
-            Dashboard de Monitoreo - PigTrap
+            Dashboard de Monitoreo - InternalCorrosion
           </h1>
           <p className="mt-2 text-gray-500">
             Sistema de análisis y visualización de FoF por segmento

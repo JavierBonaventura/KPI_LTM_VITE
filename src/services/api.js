@@ -59,6 +59,69 @@ export const getPigTrap = async ({ analysisId, pipelineId, transmissionLineId })
   return data;
 };
 
+// Consultar External Corrosion según nivel
+export const getExternalCorrosion = async ({ analysisId, pipelineId, transmissionLineId }) => {
+  const url = transmissionLineId
+    ? `/api/v2/risk-results/${analysisId}/externalCorrosion/${pipelineId}/${transmissionLineId}`
+    : `/api/v2/risk-results/${analysisId}/externalCorrosion/${pipelineId}`;
+  const { data } = await api.get(url);
+  return data;
+}
+
+// Consultar Incorrect Operations
+export const getIncorrectOperations = async ({ analysisId, pipelineId, transmissionLineId }) => {
+  const url = transmissionLineId
+    ? `/api/v2/risk-results/${analysisId}/incorrectOperations/${pipelineId}/${transmissionLineId}`
+    : `/api/v2/risk-results/${analysisId}/incorrectOperations/${pipelineId}`;
+  const { data } = await api.get(url);
+  return data;
+}
+
+// Consultar Internal Corrosion
+export const getInternalCorrosion = async ({ analysisId, pipelineId, transmissionLineId }) => {
+  const url = transmissionLineId
+    ? `/api/v2/risk-results/${analysisId}/internalCorrosion/${pipelineId}/${transmissionLineId}`
+    : `/api/v2/risk-results/${analysisId}/internalCorrosion/${pipelineId}`;
+  const { data } = await api.get(url);
+  return data;
+}
+
+// Consultar Mechanical DAmage Detonations
+export const getMechanicalDamageDetonations = async ({ analysisId, pipelineId, transmissionLineId }) => {
+  const url = transmissionLineId
+    ? `/api/v2/risk-results/${analysisId}/mechanicalDamagedetonations/${pipelineId}/${transmissionLineId}`
+    : `/api/v2/risk-results/${analysisId}/mechanicalDamagedetonations/${pipelineId}`;
+  const { data } = await api.get(url);
+  return data;
+}
+
+// Consultar Mechanical DAmage Excavation
+export const getMechanicalDamageExcavation = async ({ analysisId, pipelineId, transmissionLineId }) => {
+  const url = transmissionLineId
+    ? `/api/v2/risk-results/${analysisId}/mechanicalDamageexcavation/${pipelineId}/${transmissionLineId}`
+    : `/api/v2/risk-results/${analysisId}/mechanicalDamageexcavation/${pipelineId}`;
+  const { data } = await api.get(url);
+  return data;
+}
+
+// Consultar Mechanical DAmage Impact
+export const getMechanicalDamageImpact = async ({ analysisId, pipelineId, transmissionLineId }) => {
+  const url = transmissionLineId
+    ? `/api/v2/risk-results/${analysisId}/mechanicalDamageimpacts/${pipelineId}/${transmissionLineId}`
+    : `/api/v2/risk-results/${analysisId}/mechanicalDamageimpacts/${pipelineId}`;
+  const { data } = await api.get(url);
+  return data;
+}
+
+// Consultar por Vandalism Theft
+export const getVandalismTheft = async ({ analysisId, pipelineId, transmissionLineId }) => {
+  const url = transmissionLineId
+    ? `/api/v2/risk-results/${analysisId}/vandalismTheft/${pipelineId}/${transmissionLineId}`
+    : `/api/v2/risk-results/${analysisId}/vandalismTheft/${pipelineId}`;
+  const { data } = await api.get(url);
+  return data;
+}
+
 
 
 
