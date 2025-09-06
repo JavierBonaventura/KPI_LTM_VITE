@@ -20,6 +20,12 @@ import CalculoMechanicalDamageImpact from "./components/CalculoMechanicalDamageI
 import MechanicalDamageImpact from "./pages/MechanicalDamageImpact";
 import CalculoVandalismTheft from "./components/CalculoVandalismTheft";
 import VandalismTheft from "./pages/VandalismTheft";
+import CalculoWeatherOutsideForcesHydraulic from "./components/CalculoweatherOutsideForcesHydraulic";
+import WeatherOutsideForcesHydraulic from "./pages/weatherOutsideForcesHydraulic";
+import CalculoWeatherOutsideForcesWeather from "./components/CalculoWeatherOutsideForcesWeather";
+import WeatherOutsideForcesWeather from "./pages/WeatherOutsideForcesWeather";
+import CalculoWeatherOutsideForcesGeotech from "./components/CalculoweatherOutsideForcesGeotech";
+import WeatherOutsideForcesGeotech from "./pages/weatherOutsideForcesGeotech";
 
 
 
@@ -48,6 +54,12 @@ export default function App() {
         <Route path="/mechanicaldamageimpact" element={<MechanicalDamageImpact />} />
         <Route path="/calculovandalismtheft" element={<CalculoVandalismTheft />} />
         <Route path="/vandalismtheft" element={<VandalismTheft />} />
+        <Route path="/calculoweatheroutsideforceshydraulic" element={<CalculoWeatherOutsideForcesHydraulic />} />
+        <Route path="/weatheroutsideforceshydraulic" element={<WeatherOutsideForcesHydraulic />} />
+        <Route path="/calculoweatheroutsideforcesweather" element={<CalculoWeatherOutsideForcesWeather />} />
+        <Route path="/weatheroutsideforcesweather" element={<WeatherOutsideForcesWeather />} />
+        <Route path="/calculoweatheroutsideforcesgeotech" element={<CalculoWeatherOutsideForcesGeotech />} />
+        <Route path="/weatheroutsideforcesgeotech" element={<WeatherOutsideForcesGeotech />} />
 
       </Routes>
     </Router>

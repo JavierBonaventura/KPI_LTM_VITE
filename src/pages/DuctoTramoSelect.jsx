@@ -9,7 +9,7 @@ import RiesgoDropdown from "../components/RiesgoDropdown";
 import Loader from "../components/Loader";
 
 // Servicios de API
-import { getPipelines, getTramos, getCof, getFof, getCracking, getPigTrap, getExternalCorrosion, getIncorrectOperations, getInternalCorrosion, getMechanicalDamageDetonations, getMechanicalDamageExcavation, getMechanicalDamageImpact, getVandalismTheft } from "../services/api";
+import { getPipelines, getTramos, getCof, getFof, getCracking, getPigTrap, getExternalCorrosion, getIncorrectOperations, getInternalCorrosion, getMechanicalDamageDetonations, getMechanicalDamageExcavation, getMechanicalDamageImpact, getVandalismTheft, getWeatherOutsideForcesGeotech, getweatherOutsideForcesHydraulic, getweatherOutsideForcesWeather } from "../services/api";
 
 export default function DuctoTramoSelect() {
   const navigate = useNavigate();
@@ -103,8 +103,31 @@ export default function DuctoTramoSelect() {
       stateMapper: (results) => results[0],
       icon: "M15 10l4.553-2.276A2 2 0 0122 9.618v4.764a2 2 0 01-1.447 1.894L15 18M5 10l-4.553-2.276A2 2 0 011 6.618v4.764a2 2 0 001.447 1.894L5 18m0-8v10a2 2 0 002 2h10a2 2 0 002-2V10m-14 0a2 2 0 012-2h10a2 2 0 012 2",
       color: "from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800"
+    },
+    weatherOutsideForcesGeotech: {
+      fetchFunctions: [getWeatherOutsideForcesGeotech],
+      route: "/calculoweatherOutsideForcesGeotech",
+      buttonText: "Factores Externos y Geotécnicos",
+      stateMapper: (results) => results[0],
+      icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
+      color: "from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800"
+    },
+    weatherOutsideForcesHydraulic: {
+      fetchFunctions: [getweatherOutsideForcesHydraulic],
+      route: "/calculoweatherOutsideForcesHydraulic",
+      buttonText: "Factores Externos e Hidráulicos",
+      stateMapper: (results) => results[0],
+      icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
+      color: "from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800"
+    },
+    weatherOutsideForcesWeather: {
+      fetchFunctions: [getweatherOutsideForcesWeather],
+      route: "/calculoweatherOutsideForcesWeather",
+      buttonText: "Factores Externos y Climáticos",
+      stateMapper: (results) => results[0],
+      icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
+      color: "from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
     }
-
   };
 
   // --- Efectos ---

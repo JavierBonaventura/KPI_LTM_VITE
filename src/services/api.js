@@ -122,6 +122,34 @@ export const getVandalismTheft = async ({ analysisId, pipelineId, transmissionLi
   return data;
 }
 
+// Consultar por weatherOutsideForcesGeotech
+export const getWeatherOutsideForcesGeotech = async ({ analysisId, pipelineId, transmissionLineId }) => {
+  const url = transmissionLineId
+    ? `/api/v2/risk-results/${analysisId}/weatherOutsideForcesGeotech/${pipelineId}/${transmissionLineId}`
+    : `/api/v2/risk-results/${analysisId}/weatherOutsideForcesGeotech/${pipelineId}`;
+  const { data } = await api.get(url);
+  return data;
+}
+
+// Consultar por weatherOutsideForcesHydraulic
+export const getweatherOutsideForcesHydraulic = async ({ analysisId, pipelineId, transmissionLineId }) => {
+  const url = transmissionLineId
+    ? `/api/v2/risk-results/${analysisId}/weatherOutsideForcesHydraulic/${pipelineId}/${transmissionLineId}`
+    : `/api/v2/risk-results/${analysisId}/weatherOutsideForcesHydraulic/${pipelineId}`;
+  const { data } = await api.get(url);
+  return data;
+}
+
+// Consultar por weatherOutsideForcesWeather
+export const getweatherOutsideForcesWeather = async ({ analysisId, pipelineId, transmissionLineId }) => {
+  const url = transmissionLineId
+    ? `/api/v2/risk-results/${analysisId}/weatherOutsideForcesWeather/${pipelineId}/${transmissionLineId}`
+    : `/api/v2/risk-results/${analysisId}/weatherOutsideForcesWeather/${pipelineId}`;
+  const { data } = await api.get(url);
+  return data;
+} 
+    
+
 
 
 
