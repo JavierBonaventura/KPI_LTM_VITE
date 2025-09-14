@@ -1,9 +1,13 @@
 import { useState } from "react";
+import { useEffect } from "react";
 
 export default function DuctoDropdown({ ductos, selected, onSelect }) {
   const [isOpen, setIsOpen] = useState(false);
 
   const selectedOption = ductos.find((d) => d.TB_DuctoID === selected);
+   useEffect(() => {
+    setIsOpen(false);
+  }, [selected]);
 
   return (
     <div className="mb-4 font-sans">

@@ -71,25 +71,47 @@ export default function Matriz() {
     resultadoPorSegmentoCof,
     resultadoPorSegmentoFof
   ) => {
-    const FoFIntervals = [
-      { min: -Infinity, max: 0.00001 }, // índice 0 → FoF muy bajo
-      { min: 0.00001, max: 0.0001 }, // índice 1
-      { min: 0.0001, max: 0.001 }, // índice 2
-      { min: 0.001, max: 0.01 }, // índice 3
-      { min: 0.01, max: 0.1 }, // índice 4
-      { min: 0.1, max: 1 }, // índice 5
-      { min: 1, max: Infinity }, // índice 6 → FoF muy alto
-    ];
+    // const FoFIntervals = [
+    //   { min: -Infinity, max: 0.00001 }, // índice 0 → FoF muy bajo
+    //   { min: 0.00001, max: 0.0001 }, // índice 1
+    //   { min: 0.0001, max: 0.001 }, // índice 2
+    //   { min: 0.001, max: 0.01 }, // índice 3
+    //   { min: 0.01, max: 0.1 }, // índice 4
+    //   { min: 0.1, max: 1 }, // índice 5
+    //   { min: 1, max: Infinity }, // índice 6 → FoF muy alto
+    // ];
 
-    const CoFIntervals = [
-      { min: 1500000000, max: Infinity }, // índice 0 → CoF muy alto
-      { min: 150000000, max: 1500000000 }, // índice 1
-      { min: 150000, max: 150000000 }, // índice 2
-      { min: 500000, max: 1500000 }, // índice 3
-      { min: 40000, max: 500000 }, // índice 4
-      { min: 4000, max: 40000 }, // índice 5
-      { min: -Infinity, max: 4000 }, // índice 6 → CoF muy bajo
-    ];
+    // const CoFIntervals = [
+    //   { min: 1500000000, max: Infinity }, // índice 0 → CoF muy alto
+    //   { min: 150000000, max: 1500000000 }, // índice 1
+    //   { min: 150000, max: 150000000 }, // índice 2
+    //   { min: 500000, max: 1500000 }, // índice 3
+    //   { min: 40000, max: 500000 }, // índice 4
+    //   { min: 4000, max: 40000 }, // índice 5
+    //   { min: -Infinity, max: 4000 }, // índice 6 → CoF muy bajo
+    // ];
+
+    // Intervalos corregidos para FoF (deben coincidir exactamente con GraficaDuctoMatriz)
+const FoFIntervals = [
+  { min: -Infinity, max: 1e-5 },    // índice 0 → Almost Impossible
+  { min: 1e-5, max: 1e-4 },         // índice 1 → Rare
+  { min: 1e-4, max: 1e-3 },         // índice 2 → Possible
+  { min: 1e-3, max: 1e-2 },         // índice 3 → Likely
+  { min: 1e-2, max: 1e-1 },         // índice 4 → Very Likely
+  { min: 1e-1, max: 1e0 },          // índice 5 → Highly Likely
+  { min: 1e0, max: Infinity },      // índice 6 → Almost Certain
+];
+
+// Intervalos corregidos para CoF (deben coincidir exactamente con GraficaDuctoMatriz)
+const CoFIntervals = [
+  { min: 2e9, max: Infinity },      // índice 0 → Extreme
+  { min: 2e8, max: 2e9 },           // índice 1 → Critical
+  { min: 2e6, max: 2e8 },           // índice 2 → Severe
+  { min: 5e5, max: 2e6 },           // índice 3 → Serious
+  { min: 4e4, max: 5e5 },           // índice 4 → Moderate
+  { min: 4e3, max: 4e4 },           // índice 5 → Minor
+  { min: -Infinity, max: 4e3 },     // índice 6 → Insignificant
+];
 
     // Inicializamos la matriz con todas las celdas
     const heatmap = [];
