@@ -1,19 +1,17 @@
-import React, { useState, useMemo, useRef, useCallback } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
+
+// En tu archivo Cracking.jsx, agrega esta importación:
+// import GraficaDucto from './ruta/al/componente/GraficaDucto';
 
 export default function GraficaDucto({ datos = [] }) {
   const [hoveredSegment, setHoveredSegment] = useState(null);
   const [selectedSegment, setSelectedSegment] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
-  
-  // Estados para el zoom
-  const [viewBox, setViewBox] = useState({ start: 0, end: 100 }); // Porcentajes
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState(null);
-  const [selectionRect, setSelectionRect] = useState(null);
-  const ductoRef = useRef(null);
-
-  console.log('Estructura de datos:', datos[0]); // Para ver el primer elemento
-console.log('Todos los datos:', datos); // Para ver todo el array
+  const [lastMouseX, setLastMouseX] = useState(0);
+  const containerRef = useRef(null);
 
   // Procesar datos de los segmentos
   const processedSegments = useMemo(() => {
@@ -23,23 +21,20 @@ console.log('Todos los datos:', datos); // Para ver todo el array
     const maxPosition = Math.max(...datos.map(s => s.End || 0));
     const totalLength = maxPosition - minPosition;
     
-const sortedSegments = datos.sort((a, b) => a.Begin - b.Begin);  // Ordena primero
-
-const segments = sortedSegments.map((segment, index) => ({
-  ...segment,
-  segmento: index + 1,  // ✅ Ahora sí asigna números correctos según posición
-  length: (segment.End || 0) - (segment.Begin || 0),
-  relativeStart: ((segment.Begin - minPosition) / totalLength) * 100,
-  relativeEnd: ((segment.End - minPosition) / totalLength) * 100,
-}));
-
-return {
-  segments,  // Ya no necesitas ordenar aquí
-  totalLength,
-  minPosition,
-  maxPosition
-};
+    const segments = datos.map((segment, index) => ({
+      ...segment,
+      segmento: index + 1,
+      length: (segment.End || 0) - (segment.Begin || 0),
+      relativeStart: ((segment.Begin - minPosition) / totalLength) * 100,
+      relativeEnd: ((segment.End - minPosition) / totalLength) * 100,
+    }));
     
+    return {
+      segments: segments.sort((a, b) => a.Begin - b.Begin),
+      totalLength,
+      minPosition,
+      maxPosition
+    };
   }, [datos]);
 
   // Función para obtener color basado en FoF
@@ -52,114 +47,82 @@ return {
     return "#6c757d"; // Gris - Muy bajo
   };
 
-  // Convertir coordenadas del mouse a porcentaje del ducto
-  const getRelativePosition = useCallback((clientX) => {
-    if (!ductoRef.current) return 0;
-    const rect = ductoRef.current.getBoundingClientRect();
-    const relativeX = (clientX - rect.left) / rect.width;
-    return Math.max(0, Math.min(100, relativeX * 100));
+  // Manejar zoom con scroll
+  const handleWheel = (event) => {
+    if (!containerRef.current) return;
+    
+    event.preventDefault();
+    const rect = containerRef.current.getBoundingClientRect();
+    const centerX = (event.clientX - rect.left) / rect.width;
+    
+    const zoomFactor = event.deltaY > 0 ? 0.9 : 1.1;
+    const newZoom = Math.max(0.5, Math.min(10, zoom * zoomFactor));
+    
+    if (newZoom !== zoom) {
+      // Ajustar pan para mantener el punto bajo el mouse centrado
+      const panAdjust = centerX * (zoom - newZoom) * 100;
+      setPan(Math.max(-newZoom * 50 + 50, Math.min(newZoom * 50 - 50, pan + panAdjust)));
+      setZoom(newZoom);
+    }
+  };
+
+  // Manejar inicio de arrastre
+  const handleMouseDown = (event) => {
+    setIsDragging(true);
+    setLastMouseX(event.clientX);
+  };
+
+  // Manejar arrastre
+  const handleMouseMove = (event) => {
+    if (hoveredSegment && !isDragging) {
+      setTooltipPosition({ x: event.clientX, y: event.clientY });
+    }
+    
+    if (isDragging && containerRef.current) {
+      const deltaX = event.clientX - lastMouseX;
+      const rect = containerRef.current.getBoundingClientRect();
+      const panDelta = (deltaX / rect.width) * 100 / zoom;
+      
+      setPan(Math.max(-zoom * 50 + 50, Math.min(zoom * 50 - 50, pan + panDelta)));
+      setLastMouseX(event.clientX);
+    }
+  };
+
+  // Manejar fin de arrastre
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  // Resetear zoom y pan
+  const resetView = () => {
+    setZoom(1);
+    setPan(0);
+  };
+
+  // Efectos para limpiar event listeners
+  useEffect(() => {
+    const handleGlobalMouseUp = () => setIsDragging(false);
+    document.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => document.removeEventListener('mouseup', handleGlobalMouseUp);
   }, []);
 
-  // Eventos del zoom
-  const handleMouseDown = useCallback((e) => {
-    if (e.button !== 0) return;
-    e.preventDefault();
-    
-    const position = getRelativePosition(e.clientX);
-    setDragStart(position);
-    setIsDragging(true);
-    setSelectionRect({ start: position, end: position });
-  }, [getRelativePosition]);
-
-  const handleMouseMove = useCallback((e) => {
-    if (!isDragging || dragStart === null) return;
-    
-    const position = getRelativePosition(e.clientX);
-    setSelectionRect({ start: dragStart, end: position });
-  }, [isDragging, dragStart, getRelativePosition]);
-
-  const handleMouseUp = useCallback((e) => {
-    if (!isDragging || !selectionRect) return;
-    
-    const { start, end } = selectionRect;
-    const minPos = Math.min(start, end);
-    const maxPos = Math.max(start, end);
-    
-    // Verificar que la selección sea lo suficientemente grande
-    if (maxPos - minPos > 1) { // Al menos 1% de diferencia
-      // Convertir la selección a coordenadas del viewport actual
-      const currentRange = viewBox.end - viewBox.start;
-      const newStart = viewBox.start + (minPos / 100) * currentRange;
-      const newEnd = viewBox.start + (maxPos / 100) * currentRange;
-      
-      setViewBox({ start: newStart, end: newEnd });
-    }
-    
-    // Limpiar estado
-    setIsDragging(false);
-    setDragStart(null);
-    setSelectionRect(null);
-  }, [isDragging, selectionRect, viewBox]);
-
-  const handleMouseLeave = useCallback(() => {
-    if (isDragging) {
-      setIsDragging(false);
-      setDragStart(null);
-      setSelectionRect(null);
-    }
-    setHoveredSegment(null);
-  }, [isDragging]);
-
-  // Resetear zoom
-  const resetZoom = () => {
-    setViewBox({ start: 0, end: 100 });
-    setIsDragging(false);
-    setDragStart(null);
-    setSelectionRect(null);
-  };
-
-  // Zoom por doble click
-  const handleDoubleClick = useCallback((e) => {
-    const position = getRelativePosition(e.clientX);
-    const currentRange = viewBox.end - viewBox.start;
-    const newRange = currentRange / 2;
-    
-    const actualPosition = viewBox.start + (position / 100) * currentRange;
-    const newStart = Math.max(0, actualPosition - newRange / 2);
-    const newEnd = Math.min(100, newStart + newRange);
-    const adjustedStart = Math.max(0, newEnd - newRange);
-    
-    setViewBox({ start: adjustedStart, end: newEnd });
-  }, [getRelativePosition, viewBox]);
-
-  // Filtrar segmentos visibles en el viewport actual
-  const visibleSegments = useMemo(() => {
-    return processedSegments.segments.filter(segment => {
-      // Convertir las posiciones del segmento al viewport actual
-      const segStart = segment.relativeStart;
-      const segEnd = segment.relativeEnd;
-      
-      // Verificar si el segmento intersecta con el viewport actual
-      return segEnd >= viewBox.start && segStart <= viewBox.end;
-    });
-  }, [processedSegments.segments, viewBox]);
-
-  const handleSegmentHover = (segment, event) => {
-    if (isDragging) return;
-    setHoveredSegment(segment);
-    setTooltipPosition({ x: event.clientX, y: event.clientY });
-  };
-
-  const handleSegmentMouseMove = (event) => {
-    if (isDragging) return;
-    if (hoveredSegment) {
+  const handleSegmentMouseEnter = (segment, event) => {
+    if (!isDragging) {
+      setHoveredSegment(segment);
       setTooltipPosition({ x: event.clientX, y: event.clientY });
     }
   };
 
+  const handleSegmentMouseLeave = () => {
+    if (!isDragging) {
+      setHoveredSegment(null);
+    }
+  };
+
   const handleSegmentClick = (segment) => {
-    if (isDragging) return;
-    setSelectedSegment(selectedSegment?.segmento === segment.segmento ? null : segment);
+    if (!isDragging) {
+      setSelectedSegment(selectedSegment?.segmento === segment.segmento ? null : segment);
+    }
   };
 
   const formatNumber = (num) => {
@@ -180,158 +143,135 @@ return {
     );
   }
 
-  // Calcular posiciones de los segmentos en el viewport actual
-  const getSegmentViewportPosition = (segment) => {
-    const viewportRange = viewBox.end - viewBox.start;
-    const segmentStart = Math.max(viewBox.start, segment.relativeStart);
-    const segmentEnd = Math.min(viewBox.end, segment.relativeEnd);
-    
-    return {
-      left: ((segmentStart - viewBox.start) / viewportRange) * 100,
-      width: ((segmentEnd - segmentStart) / viewportRange) * 100
-    };
-  };
-
   return (
     <div className="w-full">
       {/* Header del gráfico */}
       <div className="text-center mb-6">
-        <div className="flex items-center justify-center gap-4 mb-4">
-          <h2 className="text-2xl font-bold text-gray-800">
-            {processedSegments.segments[0]?.Name || 'Pipeline'}
-          </h2>
-          <div className="flex gap-2">
-            <button
-              onClick={resetZoom}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
-            >
-              Resetear Zoom
-            </button>
-          </div>
-        </div>
+        <h2 className="text-2xl font-bold text-gray-800">
+          {processedSegments.segments[0]?.Name || 'Pipeline'}
+        </h2>
         <p className="text-gray-600">
           Longitud: {formatNumber(processedSegments.totalLength)}m | {processedSegments.segments.length} segmentos
         </p>
-        {viewBox.start !== 0 || viewBox.end !== 100 ? (
-          <p className="text-blue-600 text-sm">
-            Vista: {((viewBox.end - viewBox.start) / 100 * processedSegments.totalLength).toFixed(0)}m 
-            ({(viewBox.end - viewBox.start).toFixed(1)}% del total)
-          </p>
-        ) : null}
       </div>
 
       {/* Gráfico del ducto */}
       <div className="bg-white rounded-lg shadow-lg p-8">
         <div className="relative">
+          {/* Controles de zoom y pan */}
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center space-x-4">
+              <div className="text-sm text-gray-600">
+                Zoom: {(zoom * 100).toFixed(0)}%
+              </div>
+              <button
+                onClick={() => setZoom(Math.min(10, zoom * 1.2))}
+                className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+              >
+                Zoom +
+              </button>
+              <button
+                onClick={() => setZoom(Math.max(0.5, zoom * 0.8))}
+                className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+              >
+                Zoom -
+              </button>
+              <button
+                onClick={resetView}
+                className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+              >
+                Reset
+              </button>
+            </div>
+            <div className="text-sm text-gray-500">
+              {isDragging ? 'Arrastrando...' : 'Scroll para zoom, arrastra para mover'}
+            </div>
+          </div>
+
           {/* Escala superior */}
           <div className="flex justify-between text-sm text-gray-500 mb-3">
-            <span>
-              {formatNumber(processedSegments.minPosition + (viewBox.start / 100) * processedSegments.totalLength)}m
-            </span>
-            <span>
-              Zoom: {(100 / (viewBox.end - viewBox.start)).toFixed(1)}x
-            </span>
-            <span>
-              {formatNumber(processedSegments.minPosition + (viewBox.end / 100) * processedSegments.totalLength)}m
-            </span>
+            <span>{formatNumber(processedSegments.minPosition)}m</span>
+            <span>Longitud Total: {formatNumber(processedSegments.totalLength)}m</span>
+            <span>{formatNumber(processedSegments.maxPosition)}m</span>
           </div>
           
-          {/* Contenedor del ducto */}
+          {/* Contenedor del ducto con zoom y pan */}
           <div 
-            ref={ductoRef}
-            className="relative h-20 mb-12 cursor-crosshair select-none"
+            ref={containerRef}
+            className="relative h-20 mb-12 overflow-hidden cursor-grab active:cursor-grabbing select-none"
+            onWheel={handleWheel}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseLeave}
-            onDoubleClick={handleDoubleClick}
+            onMouseLeave={() => {
+              setHoveredSegment(null);
+              setIsDragging(false);
+            }}
           >
-            {/* Ducto base con gradiente metálico */}
-            <div className="absolute inset-0 bg-gradient-to-b from-gray-300 via-gray-400 to-gray-500 rounded-lg shadow-lg">
+            {/* Ducto base con transformación */}
+            <div 
+              className="absolute inset-0 bg-gradient-to-b from-gray-300 via-gray-400 to-gray-500 rounded-lg shadow-lg transition-transform duration-100"
+              style={{
+                transform: `translateX(${pan}%) scaleX(${zoom})`,
+                transformOrigin: 'left center'
+              }}
+            >
               {/* Efecto de brillo superior */}
               <div className="absolute top-1 left-4 right-4 h-4 bg-gradient-to-b from-gray-200 to-transparent rounded-t-lg opacity-70"></div>
               {/* Efecto de sombra inferior */}
               <div className="absolute bottom-1 left-4 right-4 h-4 bg-gradient-to-t from-gray-600 to-transparent rounded-b-lg opacity-50"></div>
             </div>
             
-            {/* Segmentos del ducto */}
-            {visibleSegments.map((segment, index) => {
-              const position = getSegmentViewportPosition(segment);
-              
-              // Solo mostrar si tiene ancho visible
-              if (position.width < 0.1) return null;
-              
-              return (
+            {/* Segmentos del ducto con transformación */}
+            <div
+              className="absolute inset-0 transition-transform duration-100"
+              style={{
+                transform: `translateX(${pan}%) scaleX(${zoom})`,
+                transformOrigin: 'left center'
+              }}
+            >
+              {processedSegments.segments.map((segment, index) => (
                 <div key={`segment-${segment.segmento}-${index}`}>
                   {/* Línea divisoria */}
                   <div
                     className="absolute top-0 bottom-0 w-0.5 bg-gray-700 z-10"
                     style={{
-                      left: `${position.left}%`,
+                      left: `${segment.relativeStart}%`,
                     }}
                   ></div>
                   
                   {/* Área del segmento para hover y click */}
                   <div
-                    className="absolute top-0 bottom-0 hover:bg-black hover:bg-opacity-10 transition-all duration-200 z-20"
+                    className="absolute top-0 bottom-0 cursor-pointer hover:bg-black hover:bg-opacity-10 transition-all duration-200"
                     style={{
-                      left: `${position.left}%`,
-                      width: `${position.width}%`,
+                      left: `${segment.relativeStart}%`,
+                      width: `${segment.relativeEnd - segment.relativeStart}%`,
                       backgroundColor: hoveredSegment?.segmento === segment.segmento ? 
                         'rgba(0,0,0,0.1)' : 
                         selectedSegment?.segmento === segment.segmento ? 
-                        'rgba(59, 130, 246, 0.2)' : 'transparent',
-                      cursor: isDragging ? 'crosshair' : 'pointer'
+                        'rgba(59, 130, 246, 0.2)' : 'transparent'
                     }}
-                    onMouseEnter={(e) => handleSegmentHover(segment, e)}
-                    onMouseMove={handleSegmentMouseMove}
-                    onMouseLeave={() => !isDragging && setHoveredSegment(null)}
+                    onMouseEnter={(e) => handleSegmentMouseEnter(segment, e)}
+                    onMouseLeave={handleSegmentMouseLeave}
                     onClick={() => handleSegmentClick(segment)}
                   >
                     {/* Indicador de riesgo basado en FoF */}
                     <div 
-                      className="absolute bottom-0 h-2 w-full z-10"
+                      className="absolute bottom-0 h-2 w-full"
                       style={{
                         backgroundColor: getFofColor(segment.FoF),
                       }}
                     ></div>
-                    
-                    {/* Etiqueta del segmento si hay espacio suficiente */}
-                    {position.width > 8 && (
-                      <div className="absolute top-1 left-1 text-xs font-mono text-gray-700 bg-white bg-opacity-75 px-1 rounded">
-                        {segment.segmento}
-                      </div>
-                    )}
                   </div>
                 </div>
-              );
-            })}
-            
-            {/* Rectángulo de selección */}
-            {selectionRect && (
+              ))}
+              
+              {/* Línea divisoria final */}
               <div
-                className="absolute top-0 bottom-0 bg-blue-200 bg-opacity-30 border-2 border-blue-400 border-dashed pointer-events-none z-30"
-                style={{
-                  left: `${Math.min(selectionRect.start, selectionRect.end)}%`,
-                  width: `${Math.abs(selectionRect.end - selectionRect.start)}%`,
-                }}
+                className="absolute top-0 bottom-0 w-0.5 bg-gray-700 z-10"
+                style={{ right: '0%' }}
               ></div>
-            )}
-            
-            {/* Línea divisoria final */}
-            <div
-              className="absolute top-0 bottom-0 w-0.5 bg-gray-700 z-10"
-              style={{ right: '0%' }}
-            ></div>
-          </div>
-
-          {/* Instrucciones de uso */}
-          <div className="text-center text-sm text-gray-500 mb-4">
-            <p>
-              <span className="font-medium">Arrastra</span> para seleccionar área de zoom • 
-              <span className="font-medium"> Doble click</span> para zoom 2x • 
-              <span className="font-medium"> Click</span> en segmento para detalles
-            </p>
+            </div>
           </div>
 
           {/* Leyenda de colores FoF */}
@@ -451,7 +391,7 @@ return {
       )}
 
       {/* Tooltip */}
-      {hoveredSegment && !isDragging && (
+      {hoveredSegment && (
         <div
           className="fixed z-50 bg-gray-900 text-white p-4 rounded-lg shadow-xl max-w-sm pointer-events-none"
           style={{

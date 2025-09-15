@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 
 export default function GraficaDuctoMatriz(props) {
@@ -7,8 +7,15 @@ export default function GraficaDuctoMatriz(props) {
   const [selectedSegment, setSelectedSegment] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   
+  // Estados para el zoom
+  const [viewBox, setViewBox] = useState({ start: 0, end: 100 }); // Porcentajes
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState(null);
+  const [selectionRect, setSelectionRect] = useState(null);
+  const ductoRef = useRef(null);
+  
   // Recibimos los datos del state o arreglo vacío
-const receivedHeatmap = props.heatmapConDetalle || location.state?.heatmapConDetalle || [];
+  const receivedHeatmap = props.heatmapConDetalle || location.state?.heatmapConDetalle || [];
   console.log("datos recibidos", receivedHeatmap)
 
   // Configuración de la matriz de riesgo
@@ -32,78 +39,78 @@ const receivedHeatmap = props.heatmapConDetalle || location.state?.heatmapConDet
     { label: "Almost Certain", range: "(1e+0 - ∞)" },
   ];
 
-// Función corregida para determinar el índice CoF basado en el valor cofTotal
-const getCofIndex = (cofTotal) => {
-  if (cofTotal >= 2e9) return 0; // Extreme
-  if (cofTotal >= 2e8) return 1; // Critical
-  if (cofTotal >= 2e6) return 2; // Severe
-  if (cofTotal >= 5e5) return 3; // Serious
-  if (cofTotal >= 4e4) return 4; // Moderate
-  if (cofTotal >= 4e3) return 5; // Minor
-  return 6; // Insignificant
-};
-
-// Función corregida para determinar el índice FoF basado en el valor fofTotal
-const getFofIndex = (fofTotal) => {
-  if (fofTotal >= 1e0) return 6; // Almost Certain
-  if (fofTotal >= 1e-1) return 5; // Highly Likely
-  if (fofTotal >= 1e-2) return 4; // Very Likely
-  if (fofTotal >= 1e-3) return 3; // Likely
-  if (fofTotal >= 1e-4) return 2; // Possible
-  if (fofTotal >= 1e-5) return 1; // Rare
-  return 0; // Almost Impossible
-};
-
-// Función corregida para obtener el color de riesgo basado en los índices
-// Esta función debe ser EXACTAMENTE igual a la de RiskMatrixHeatmap
-const getRiskColor = (cofIndex, fofIndex) => {
-  const rules = {
-    0: [
-      { max: 1, color: "#fd7e14" }, // orange
-      { max: 3, color: "#dc3545" }, // red
-      { max: Infinity, color: "#b21f2d" }, // dark red
-    ],
-    1: [
-      { max: 0, color: "#ffc107" }, // yellow
-      { max: 2, color: "#fd7e14" }, // orange
-      { max: 4, color: "#dc3545" }, // red
-      { max: Infinity, color: "#b21f2d" }, // dark red
-    ],
-    2: [
-      { max: 1, color: "#ffc107" }, // yellow
-      { max: 3, color: "#fd7e14" }, // orange
-      { max: 5, color: "#dc3545" }, // red
-      { max: Infinity, color: "#b21f2d" }, // dark red
-    ],
-    3: [
-      { max: 2, color: "#ffc107" }, // yellow
-      { max: 4, color: "#fd7e14" }, // orange
-      { max: Infinity, color: "#dc3545" }, // red
-    ],
-    4: [
-      { max: 0, color: "#28a745" }, // green
-      { max: 3, color: "#ffc107" }, // yellow
-      { max: 5, color: "#fd7e14" }, // orange
-      { max: Infinity, color: "#dc3545" }, // red
-    ],
-    5: [
-      { max: 1, color: "#28a745" }, // green
-      { max: 4, color: "#ffc107" }, // yellow
-      { max: Infinity, color: "#fd7e14" }, // orange
-    ],
-    6: [
-      { max: 2, color: "#28a745" }, // green
-      { max: 5, color: "#ffc107" }, // yellow
-      { max: Infinity, color: "#fd7e14" }, // orange
-    ],
+  // Función corregida para determinar el índice CoF basado en el valor cofTotal
+  const getCofIndex = (cofTotal) => {
+    if (cofTotal >= 2e9) return 0; // Extreme
+    if (cofTotal >= 2e8) return 1; // Critical
+    if (cofTotal >= 2e6) return 2; // Severe
+    if (cofTotal >= 5e5) return 3; // Serious
+    if (cofTotal >= 4e4) return 4; // Moderate
+    if (cofTotal >= 4e3) return 5; // Minor
+    return 6; // Insignificant
   };
 
-  const rowRules = rules[cofIndex];
-  if (!rowRules) return "#6b7280"; // gray
+  // Función corregida para determinar el índice FoF basado en el valor fofTotal
+  const getFofIndex = (fofTotal) => {
+    if (fofTotal >= 1e0) return 6; // Almost Certain
+    if (fofTotal >= 1e-1) return 5; // Highly Likely
+    if (fofTotal >= 1e-2) return 4; // Very Likely
+    if (fofTotal >= 1e-3) return 3; // Likely
+    if (fofTotal >= 1e-4) return 2; // Possible
+    if (fofTotal >= 1e-5) return 1; // Rare
+    return 0; // Almost Impossible
+  };
 
-  const rule = rowRules.find((r) => fofIndex <= r.max);
-  return rule ? rule.color : "#6b7280";
-};
+  // Función corregida para obtener el color de riesgo basado en los índices
+  // Esta función debe ser EXACTAMENTE igual a la de RiskMatrixHeatmap
+  const getRiskColor = (cofIndex, fofIndex) => {
+    const rules = {
+      0: [
+        { max: 1, color: "#fd7e14" }, // orange
+        { max: 3, color: "#dc3545" }, // red
+        { max: Infinity, color: "#b21f2d" }, // dark red
+      ],
+      1: [
+        { max: 0, color: "#ffc107" }, // yellow
+        { max: 2, color: "#fd7e14" }, // orange
+        { max: 4, color: "#dc3545" }, // red
+        { max: Infinity, color: "#b21f2d" }, // dark red
+      ],
+      2: [
+        { max: 1, color: "#ffc107" }, // yellow
+        { max: 3, color: "#fd7e14" }, // orange
+        { max: 5, color: "#dc3545" }, // red
+        { max: Infinity, color: "#b21f2d" }, // dark red
+      ],
+      3: [
+        { max: 2, color: "#ffc107" }, // yellow
+        { max: 4, color: "#fd7e14" }, // orange
+        { max: Infinity, color: "#dc3545" }, // red
+      ],
+      4: [
+        { max: 0, color: "#28a745" }, // green
+        { max: 3, color: "#ffc107" }, // yellow
+        { max: 5, color: "#fd7e14" }, // orange
+        { max: Infinity, color: "#dc3545" }, // red
+      ],
+      5: [
+        { max: 1, color: "#28a745" }, // green
+        { max: 4, color: "#ffc107" }, // yellow
+        { max: Infinity, color: "#fd7e14" }, // orange
+      ],
+      6: [
+        { max: 2, color: "#28a745" }, // green
+        { max: 5, color: "#ffc107" }, // yellow
+        { max: Infinity, color: "#fd7e14" }, // orange
+      ],
+    };
+
+    const rowRules = rules[cofIndex];
+    if (!rowRules) return "#6b7280"; // gray
+
+    const rule = rowRules.find((r) => fofIndex <= r.max);
+    return rule ? rule.color : "#6b7280";
+  };
 
   // Extraer todos los segmentos y calcular dimensiones
   const allSegments = useMemo(() => {
@@ -143,22 +150,131 @@ const getRiskColor = (cofIndex, fofIndex) => {
     };
   }, [allSegments]);
 
+  // Convertir coordenadas del mouse a porcentaje del ducto
+  const getRelativePosition = useCallback((clientX) => {
+    if (!ductoRef.current) return 0;
+    const rect = ductoRef.current.getBoundingClientRect();
+    const relativeX = (clientX - rect.left) / rect.width;
+    return Math.max(0, Math.min(100, relativeX * 100));
+  }, []);
+
+  // Eventos del zoom
+  const handleMouseDown = useCallback((e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    
+    const position = getRelativePosition(e.clientX);
+    setDragStart(position);
+    setIsDragging(true);
+    setSelectionRect({ start: position, end: position });
+  }, [getRelativePosition]);
+
+  const handleMouseMove = useCallback((e) => {
+    if (!isDragging || dragStart === null) return;
+    
+    const position = getRelativePosition(e.clientX);
+    setSelectionRect({ start: dragStart, end: position });
+  }, [isDragging, dragStart, getRelativePosition]);
+
+  const handleMouseUp = useCallback((e) => {
+    if (!isDragging || !selectionRect) return;
+    
+    const { start, end } = selectionRect;
+    const minPos = Math.min(start, end);
+    const maxPos = Math.max(start, end);
+    
+    // Verificar que la selección sea lo suficientemente grande
+    if (maxPos - minPos > 1) { // Al menos 1% de diferencia
+      // Convertir la selección a coordenadas del viewport actual
+      const currentRange = viewBox.end - viewBox.start;
+      const newStart = viewBox.start + (minPos / 100) * currentRange;
+      const newEnd = viewBox.start + (maxPos / 100) * currentRange;
+      
+      setViewBox({ start: newStart, end: newEnd });
+    }
+    
+    // Limpiar estado
+    setIsDragging(false);
+    setDragStart(null);
+    setSelectionRect(null);
+  }, [isDragging, selectionRect, viewBox]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (isDragging) {
+      setIsDragging(false);
+      setDragStart(null);
+      setSelectionRect(null);
+    }
+    setHoveredSegment(null);
+  }, [isDragging]);
+
+  // Resetear zoom
+  const resetZoom = () => {
+    setViewBox({ start: 0, end: 100 });
+    setIsDragging(false);
+    setDragStart(null);
+    setSelectionRect(null);
+  };
+
+  // Zoom por doble click
+  const handleDoubleClick = useCallback((e) => {
+    const position = getRelativePosition(e.clientX);
+    const currentRange = viewBox.end - viewBox.start;
+    const newRange = currentRange / 2;
+    
+    const actualPosition = viewBox.start + (position / 100) * currentRange;
+    const newStart = Math.max(0, actualPosition - newRange / 2);
+    const newEnd = Math.min(100, newStart + newRange);
+    const adjustedStart = Math.max(0, newEnd - newRange);
+    
+    setViewBox({ start: adjustedStart, end: newEnd });
+  }, [getRelativePosition, viewBox]);
+
+  // Filtrar segmentos visibles en el viewport actual
+  const visibleSegments = useMemo(() => {
+    return pipelineData.segments.filter(segment => {
+      // Convertir las posiciones del segmento al viewport actual
+      const segStart = segment.relativeStart;
+      const segEnd = segment.relativeEnd;
+      
+      // Verificar si el segmento intersecta con el viewport actual
+      return segEnd >= viewBox.start && segStart <= viewBox.end;
+    });
+  }, [pipelineData.segments, viewBox]);
+
+  // Calcular posiciones de los segmentos en el viewport actual
+  const getSegmentViewportPosition = (segment) => {
+    const viewportRange = viewBox.end - viewBox.start;
+    const segmentStart = Math.max(viewBox.start, segment.relativeStart);
+    const segmentEnd = Math.min(viewBox.end, segment.relativeEnd);
+    
+    return {
+      left: ((segmentStart - viewBox.start) / viewportRange) * 100,
+      width: ((segmentEnd - segmentStart) / viewportRange) * 100
+    };
+  };
+
   const handleMouseEnter = (segment, event) => {
+    if (isDragging) return;
     setHoveredSegment(segment);
     setTooltipPosition({ x: event.clientX, y: event.clientY });
   };
 
-  const handleMouseMove = (event) => {
+  const handleSegmentMouseMove = (event) => {
+    if (isDragging) return;
     if (hoveredSegment) {
       setTooltipPosition({ x: event.clientX, y: event.clientY });
     }
   };
 
-  const handleMouseLeave = () => {
-    setHoveredSegment(null);
+  const handleSegmentLeave = () => {
+    if (!isDragging) {
+      setHoveredSegment(null);
+    }
   };
 
   const handleSegmentClick = (segment) => {
+    if (isDragging) return;
     setSelectedSegment(selectedSegment?.segmento === segment.segmento ? null : segment);
   };
 
@@ -193,12 +309,28 @@ const getRiskColor = (cofIndex, fofIndex) => {
     <div className="w-full">
       {/* Header del gráfico */}
       <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">
-          {allSegments[0]?.Name || 'Pipeline'}
-        </h2>
+        <div className="flex items-center justify-center gap-4 mb-4">
+          <h2 className="text-2xl font-bold text-gray-800">
+            {allSegments[0]?.Name || 'Pipeline'}
+          </h2>
+          <div className="flex gap-2">
+            <button
+              onClick={resetZoom}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
+            >
+              Resetear Zoom
+            </button>
+          </div>
+        </div>
         <p className="text-gray-600">
           Longitud: {formatNumber(pipelineData.totalLength)}m | {pipelineData.segments.length} segmentos
         </p>
+        {viewBox.start !== 0 || viewBox.end !== 100 ? (
+          <p className="text-blue-600 text-sm">
+            Vista: {((viewBox.end - viewBox.start) / 100 * pipelineData.totalLength).toFixed(0)}m 
+            ({(viewBox.end - viewBox.start).toFixed(1)}% del total)
+          </p>
+        ) : null}
       </div>
 
       {/* Gráfico del ducto */}
@@ -206,64 +338,113 @@ const getRiskColor = (cofIndex, fofIndex) => {
         <div className="relative">
           {/* Escala superior */}
           <div className="flex justify-between text-sm text-gray-500 mb-3">
-            <span>{formatNumber(pipelineData.minPosition)}m</span>
-            <span>Longitud Total: {formatNumber(pipelineData.totalLength)}m</span>
-            <span>{formatNumber(pipelineData.maxPosition)}m</span>
+            <span>
+              {formatNumber(pipelineData.minPosition + (viewBox.start / 100) * pipelineData.totalLength)}m
+            </span>
+            <span>
+              Zoom: {(100 / (viewBox.end - viewBox.start)).toFixed(1)}x
+            </span>
+            <span>
+              {formatNumber(pipelineData.minPosition + (viewBox.end / 100) * pipelineData.totalLength)}m
+            </span>
           </div>
           
           {/* Contenedor del ducto */}
-          <div className="relative h-20 mb-12">
+          <div 
+            ref={ductoRef}
+            className="relative h-20 mb-12 cursor-crosshair select-none"
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseLeave}
+            onDoubleClick={handleDoubleClick}
+          >
             {/* Ducto base con gradiente metálico */}
-            <div className="absolute inset-0 bg-gradient-to-b from-gray-300 via-gray-400 to-gray-500  shadow-lg">
+            <div className="absolute inset-0 bg-gradient-to-b from-gray-300 via-gray-400 to-gray-500 rounded-lg shadow-lg">
               {/* Efecto de brillo superior */}
-              <div className="absolute top-1 left-4 right-4 h-4 bg-gradient-to-b from-gray-200 to-transparent  opacity-70"></div>
+              <div className="absolute top-1 left-1 right-1 h-4 bg-gradient-to-b from-gray-200 to-transparent rounded-t-lg opacity-70"></div>
               {/* Efecto de sombra inferior */}
-              <div className="absolute bottom-1 left-4 right-4 h-4 bg-gradient-to-t from-gray-600 to-transparent  opacity-50"></div>
+              <div className="absolute bottom-1 left-1 right-1 h-4 bg-gradient-to-t from-gray-600 to-transparent rounded-b-lg opacity-50"></div>
             </div>
             
-            {/* Líneas divisorias de segmentos */}
-            {pipelineData.segments.map((segment, index) => (
-              <div key={`divider-${segment.segmento}-${index}`}>
-                {/* Línea divisoria */}
-                <div
-                  className="absolute top-0 bottom-0 w-0.5 bg-gray-700 z-10"
-                  style={{
-                    left: `${segment.relativeStart}%`,
-                  }}
-                ></div>
-                
-                {/* Área del segmento para hover y click */}
-                <div
-                  className="absolute top-0 bottom-0 cursor-pointer hover:bg-black hover:bg-opacity-10 transition-all duration-200"
-                  style={{
-                    left: `${segment.relativeStart}%`,
-                    width: `${segment.relativeEnd - segment.relativeStart}%`,
-                    backgroundColor: hoveredSegment?.segmento === segment.segmento ? 
-                      'rgba(0,0,0,0.1)' : 
-                      selectedSegment?.segmento === segment.segmento ? 
-                      'rgba(59, 130, 246, 0.2)' : 'transparent'
-                  }}
-                  onMouseEnter={(e) => handleMouseEnter(segment, e)}
-                  onMouseMove={handleMouseMove}
-                  onMouseLeave={handleMouseLeave}
-                  onClick={() => handleSegmentClick(segment)}
-                >
-                  {/* Indicador de riesgo basado en matriz */}
-                  <div 
-                    className="absolute bottom-0 h-2 w-full"
+            {/* Segmentos del ducto */}
+            {visibleSegments.map((segment, index) => {
+              const position = getSegmentViewportPosition(segment);
+              
+              // Solo mostrar si tiene ancho visible
+              if (position.width < 0.1) return null;
+              
+              return (
+                <div key={`segment-${segment.segmento}-${index}`}>
+                  {/* Línea divisoria */}
+                  <div
+                    className="absolute top-0 bottom-0 w-0.5 bg-gray-700 z-10"
                     style={{
-                      backgroundColor: segment.riskColor,
+                      left: `${position.left}%`,
                     }}
                   ></div>
+                  
+                  {/* Área del segmento para hover y click */}
+                  <div
+                    className="absolute top-0 bottom-0 hover:bg-black hover:bg-opacity-10 transition-all duration-200 z-20"
+                    style={{
+                      left: `${position.left}%`,
+                      width: `${position.width}%`,
+                      backgroundColor: hoveredSegment?.segmento === segment.segmento ? 
+                        'rgba(0,0,0,0.1)' : 
+                        selectedSegment?.segmento === segment.segmento ? 
+                        'rgba(59, 130, 246, 0.2)' : 'transparent',
+                      cursor: isDragging ? 'crosshair' : 'pointer'
+                    }}
+                    onMouseEnter={(e) => handleMouseEnter(segment, e)}
+                    onMouseMove={handleSegmentMouseMove}
+                    onMouseLeave={handleSegmentLeave}
+                    onClick={() => handleSegmentClick(segment)}
+                  >
+                    {/* Indicador de riesgo basado en matriz */}
+                    <div 
+                      className="absolute bottom-0 h-2 w-full z-10"
+                      style={{
+                        backgroundColor: segment.riskColor,
+                      }}
+                    ></div>
+                    
+                    {/* Etiqueta del segmento si hay espacio suficiente */}
+                    {position.width > 8 && (
+                      <div className="absolute top-1 left-1 text-xs font-mono text-gray-700 bg-white bg-opacity-75 px-1 rounded">
+                        {segment.segmento}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
+            
+            {/* Rectángulo de selección */}
+            {selectionRect && (
+              <div
+                className="absolute top-0 bottom-0 bg-blue-200 bg-opacity-30 border-2 border-blue-400 border-dashed pointer-events-none z-30"
+                style={{
+                  left: `${Math.min(selectionRect.start, selectionRect.end)}%`,
+                  width: `${Math.abs(selectionRect.end - selectionRect.start)}%`,
+                }}
+              ></div>
+            )}
             
             {/* Línea divisoria final */}
             <div
               className="absolute top-0 bottom-0 w-0.5 bg-gray-700 z-10"
               style={{ right: '0%' }}
             ></div>
+          </div>
+
+          {/* Instrucciones de uso */}
+          <div className="text-center text-sm text-gray-500 mb-4">
+            <p>
+              <span className="font-medium">Arrastra</span> para seleccionar área de zoom • 
+              <span className="font-medium"> Doble click</span> para zoom 2x • 
+              <span className="font-medium"> Click</span> en segmento para detalles
+            </p>
           </div>
 
           {/* Leyenda de colores de riesgo */}
@@ -381,7 +562,7 @@ const getRiskColor = (cofIndex, fofIndex) => {
       )}
 
       {/* Tooltip */}
-      {hoveredSegment && (
+      {hoveredSegment && !isDragging && (
         <div
           className="fixed z-50 bg-gray-900 text-white p-4 rounded-lg shadow-xl max-w-sm pointer-events-none"
           style={{
@@ -397,18 +578,19 @@ const getRiskColor = (cofIndex, fofIndex) => {
             <div className="grid grid-cols-1 gap-2 text-sm">
               <div><span className="font-medium">Posición:</span> {formatNumber(hoveredSegment.Begin)}m - {formatNumber(hoveredSegment.End)}m</div>
               <div><span className="font-medium">Longitud:</span> {formatNumber(hoveredSegment.length)}m</div>
-<div>
-  <span className="font-medium">CoF:</span> 
-  <span className="ml-2 px-2 py-1 rounded text-xs font-bold" style={{ backgroundColor: hoveredSegment.riskColor, color: 'white' }}>
-    {hoveredSegment.cofLabel} ({hoveredSegment.cofIndex})
-  </span>
-</div>
-<div>
-  <span className="font-medium">FoF:</span> 
-  <span className="ml-2 px-2 py-1 rounded text-xs font-bold" style={{ backgroundColor: hoveredSegment.riskColor, color: 'white' }}>
-    {hoveredSegment.fofLabel} ({hoveredSegment.fofIndex})
-  </span>
-</div>              <div><span className="font-medium">Valor:</span> {formatCurrency(hoveredSegment.Value)}</div>
+              <div>
+                <span className="font-medium">CoF:</span> 
+                <span className="ml-2 px-2 py-1 rounded text-xs font-bold" style={{ backgroundColor: hoveredSegment.riskColor, color: 'white' }}>
+                  {hoveredSegment.cofLabel} ({hoveredSegment.cofIndex})
+                </span>
+              </div>
+              <div>
+                <span className="font-medium">FoF:</span> 
+                <span className="ml-2 px-2 py-1 rounded text-xs font-bold" style={{ backgroundColor: hoveredSegment.riskColor, color: 'white' }}>
+                  {hoveredSegment.fofLabel} ({hoveredSegment.fofIndex})
+                </span>
+              </div>
+              <div><span className="font-medium">Valor:</span> {formatCurrency(hoveredSegment.Value)}</div>
               <div><span className="font-medium">CoF Total:</span> {formatCurrency(hoveredSegment.cofTotal)}</div>
               <div><span className="font-medium">FoF Total:</span> {hoveredSegment.fofTotal.toExponential(2)}</div>
             </div>
